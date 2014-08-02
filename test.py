@@ -35,7 +35,7 @@ while(True):
     buf2 = cv2.addWeighted(buf2,1-average_factor,gray,average_factor,0)
     #buf2 += gray
     
-	show = gray
+    show = gray
 
     cv2.imshow('Live',gray.astype(np.uint8))
     cv2.imshow('Sum',cv2.convertScaleAbs(buf2))

@@ -1,7 +1,9 @@
 import numpy as np
 import cv2
+import ROOT
 
 cap = cv2.VideoCapture(0)
+#cap.set(cv2.CV_CAP_PROP_FPS,29.97)
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
