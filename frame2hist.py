@@ -6,10 +6,15 @@ import ROOT
 import sys
 import datetime
 
+###### Default Settings #########
 numframes = 25
 xbins = 64
 ybins = 48
+automode = True
+windowsize = (1200,800)
 
+
+### Parse Command Line ###
 for arg in sys.argv:
     if arg.startswith("--numframes="):
         numframes = int(arg.split('=')[1])
@@ -22,7 +27,7 @@ for arg in sys.argv:
 	print("")
 	print("  Usage:")
 	print("")
-	print("     frame2hist.py [--frames=< # frames to for fitting center = 25> ")
+	print("     frame2hist.py [--numframes=< # frames to for fitting center = 25> ")
 	print("                    --xbins=<64> ")
 	print("                    --ybins=<48> ")
 	print("")
@@ -30,20 +35,30 @@ for arg in sys.argv:
 	print("")
 
 
+### Init ###
+
+# Init Video Capture
 cap = cv2.VideoCapture(0)
 
+# Set up ROOT
+
+# Canvas
 c = ROOT.TCanvas("profile","Beam Profile")
 c.Divide(2,2)
+c.SetWindowSize(windowsize[0], windowsize[1])
+
+# 2D profile histogram
 hist = ROOT.TH2D("frame","Beam Profile",xbins,0,640,ybins,0,480)
 hist.SetXTitle("x")
 hist.SetYTitle("y")
 hist.SetZTitle("Intensity [a.u.]")
-histx = ROOT.TH1D("framex","framex AA",xbins,0,640)
-histy = ROOT.TH1D("framey","framey",ybins,0,480)
+
+# Fit functions
 f2 = ROOT.TF2("f2","xygaus",0 ,640,0,640);
 f1 = ROOT.TF1("f1","gaus",0 ,640);
 
 curframe = 0
+last_p = 0
 
 def PrintKeys():
         print("=====  OpenCV beam camera analyzer ======")
@@ -56,67 +71,38 @@ def PrintKeys():
 
 # Grab a grayscale video frame as 64bit floats
 def GrabFrame():
-    ret = False
-	#try to read a new frame
     ret, frame = cap.read()
     # convert to grayscale and floats
     return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float)
 
-
-
 PrintKeys()
 
-while(cap.isOpened()):
 
-    ret, frame = GrabFrame()
-
-    if curframe == 0:
-        print("")
-        print("Accumulating frames...")
-        print("")
-        ret, buf=GrabFrame()
-
-    if ret==True:
-        if curframe < numframes:
-            print(1.0 * curframe/numframes)
-            # accumulate frames
-            buf+=frame
-
-        # show actual frame, converted to 8bit
-        cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure",frame.astype(np.uint8))
-    
-
-        curframe = curframe + 1
-    else:
-	print("Error reading video.")
-        break
-
-    # Keyboad Input
-    key = cv2.waitKey(1) & 0xFF;
-    if(key == ord('q')):
-        print("Bye!")
-        break
-    elif( key == ord('r')):
-        hist.Reset()
-        curframe = 0
-    elif( key == ord('p')):
-        i = datetime.datetime.now()
-        filename = i.strftime('Beamspot-%Y-%m-%d-%H:%M:%S.png')
-        print "Saving camera picture to ",filename
-        cv2.imwrite( filename, frame )
-    elif( key == ord('s')):
-        i = datetime.datetime.now()
-        filename = i.strftime('BeamspotFit-%Y-%m-%d-%H:%M:%S.png')
+def SaveHistograms():
+        date = datetime.datetime.now()
+        filename = date.strftime('BeamspotFit-%Y-%m-%d-%H:%M:%S.png')
         print "Saving Histograms to ",filename
-        c.SetWindowSize(1200,800)
+        c.SetWindowSize(windowsize[0], windowsize[1])
         c.SaveAs(filename)
 
+def SaveCamera():
+        date = datetime.datetime.now()
+        filename = date.strftime('Beamspot-%Y-%m-%d-%H:%M:%S.png')
+        print "Saving Camera Picture to ",filename
+        cv2.imwrite( filename, frame )
 
-    if curframe == numframes:
+def StartMeasurement():
+    global last_p
+    global curframe
+    curframe = 0
+    last_p = 0
+
+def Analyse():
+        hist.Reset()
+
         date = datetime.datetime.now()
         Title = date.strftime('Beam Profole %Y-%m-%d %H:%M:%S')
         hist.SetTitle(Title)
-
 	print("Filling Histogram...")
 
         size=buf.shape
@@ -150,6 +136,64 @@ while(cap.isOpened()):
         print("Done")
 
         PrintKeys()
+
+        if(automode):
+           StartMeasurement()
+
+
+while(cap.isOpened()):
+
+    ret, frame = GrabFrame()
+
+    if curframe == 0:
+        print ""
+        print "Accumulating ",numframes," frames..."
+        ret, buf=GrabFrame()
+
+    if ret==True:
+        if curframe < numframes:
+            p = round(1.0 * curframe/numframes*10)
+            if( p > last_p):
+                sys.stdout.write('#')
+                sys.stdout.flush()
+                last_p = p
+            # accumulate frames
+            buf+=frame
+
+        # show actual frame, converted to 8bit
+        cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure", frame.astype(np.uint8))
+
+        curframe = curframe + 1
+    else:
+	print("Error reading video.")
+        break
+
+    # Keyboad Input
+    key = cv2.waitKey(1) & 0xFF;
+
+    if(key == ord('q')):
+        print("Bye!")
+        break
+
+    elif( key == ord('r')):
+        StartMeasurement()
+
+    elif( key == ord('p')):
+        SaveCamera()
+
+    elif( key == ord('s')):
+        SaveHistograms()
+
+    elif( key == ord('a')):
+        automode ^= True;
+        print "Automode: ", automode
+        if(automode):
+           StartMeasurement()
+
+
+    if curframe == numframes:
+        print ""
+        Analyse()
 
 
 # Release everything if job is finished
