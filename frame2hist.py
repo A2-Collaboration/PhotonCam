@@ -86,6 +86,7 @@ while(cap.isOpened()):
         c.cd(4)
         histy.Fit("f1")
         histy.Draw("")
+        c.Update()
         print("")
         print("  r for remeasure")
         print("")
