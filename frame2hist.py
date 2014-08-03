@@ -34,8 +34,11 @@ cap = cv2.VideoCapture(0)
 
 c = ROOT.TCanvas("profile","Beam Profile")
 c.Divide(2,2)
-hist = ROOT.TH2D("frame","frame",xbins,0,640,ybins,0,480)
-histx = ROOT.TH1D("framex","framex",xbins,0,640)
+hist = ROOT.TH2D("frame","Beam Profile",xbins,0,640,ybins,0,480)
+hist.SetXTitle("x")
+hist.SetYTitle("y")
+hist.SetZTitle("Intensity [a.u.]")
+histx = ROOT.TH1D("framex","framex AA",xbins,0,640)
 histy = ROOT.TH1D("framey","framey",ybins,0,480)
 f2 = ROOT.TF2("f2","xygaus",0 ,640,0,640);
 f1 = ROOT.TF1("f1","gaus",0 ,640);
@@ -99,6 +102,9 @@ while(cap.isOpened()):
 
 
     if curframe == numframes:
+        date = datetime.datetime.now()
+        Title = date.strftime('Beam Profole %Y-%m-%d %H:%M:%S')
+        hist.SetTitle(Title)
 
 	print("Filling Histogram...")
 
@@ -111,7 +117,9 @@ while(cap.isOpened()):
 
 	print("Projecting...")
         histx = hist.ProjectionX()
+	histx.SetTitle("X-Projection")
         histy = hist.ProjectionY()
+        histy.SetTitle("Y-Projection")
         print("")
 
         print("Fitting...")
