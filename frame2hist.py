@@ -44,7 +44,9 @@ curframe = 0
 
 print("=====  OpenCV beam camera analyzer ======")
 print("")
-print("  r for remeasure")
+print("  r: remeasure")
+print("  s: save current picture")
+print("  q: quit")
 print("")
 
 
@@ -127,11 +129,6 @@ while(cap.isOpened()):
         histy.Draw("")
         c.Update()
         print("Done")
-
-        print("")
-        print("  r for remeasure, q to quit")
-        print("")
-
 
 
 # Release everything if job is finished
