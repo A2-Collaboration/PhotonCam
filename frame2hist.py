@@ -99,6 +99,12 @@ while(cap.isOpened()):
         filename = i.strftime('Beamspot-%Y-%m-%d-%H:%M:%S.png')
         print "Saving camera picture to ",filename
         cv2.imwrite( filename, frame )
+    elif( key == ord('s')):
+        i = datetime.datetime.now()
+        filename = i.strftime('BeamspotFit-%Y-%m-%d-%H:%M:%S.png')
+        print "Saving Histograms to ",filename
+        c.SetWindowSize(1200,800)
+        c.SaveAs(filename)
 
 
     if curframe == numframes:
