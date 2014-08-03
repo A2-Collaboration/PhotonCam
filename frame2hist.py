@@ -14,6 +14,15 @@ automode = True
 windowsize = (1200,800)
 average_factor = 0.1
 
+def PrintKeys():
+        print("Keys:")
+        print("")
+        print("  a: Toggle auto mode")
+        print("  r: remeasure")
+        print("  s: save histograms as png")
+        print("  p: save camera picture as png")
+        print("  q: quit")
+        print("")
 
 ### Parse Command Line ###
 for arg in sys.argv:
@@ -23,17 +32,20 @@ for arg in sys.argv:
         xbins = int(arg.split('=')[1])
     if arg.startswith("--ybins="):
         ybins = int(arg.split('=')[1])
+    if arg.startswith("--noauto"):
+        automode=False
     if arg.startswith("--help" or "-help" ):
-	print("=====  OpenCV beam camera analyzer ======")
-	print("")
-	print("  Usage:")
-	print("")
-	print("     frame2hist.py [--numframes=< # frames to for fitting center = 25> ")
-	print("                    --xbins=<64> ")
-	print("                    --ybins=<48> ")
-	print("")
-	print("  Go to window 'Frame' and hit r for remeasure")
-	print("")
+	print "=====  OpenCV beam camera analyzer ======"
+	print ""
+	print "  Usage:"
+	print ""
+	print "     ",sys.argv[0]," [--numframes=< # frames to for fitting center = 25> "
+	print "                    --xbins=<64> "
+	print "                    --ybins=<48> "
+	print "                    --noauto  turn of auto mode"
+	print ""
+        PrintKeys()
+	print ""
 
 
 ### Init ###
@@ -61,13 +73,6 @@ f1 = ROOT.TF1("f1","gaus",0 ,640);
 curframe = 0
 last_p = 0
 
-def PrintKeys():
-        print("=====  OpenCV beam camera analyzer ======")
-        print("")
-        print("  r: remeasure")
-        print("  s: save current picture")
-        print("  q: quit")
-        print("")
 
 
 # Grab a grayscale video frame as 64bit floats
@@ -75,6 +80,7 @@ def GrabFrame():
     ret, frame = cap.read()
     # convert to grayscale and floats
     return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float)
+
 
 PrintKeys()
 
