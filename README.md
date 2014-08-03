@@ -18,3 +18,8 @@ NumPy tutorial
 http://wiki.scipy.org/Tentative_NumPy_Tutorial
 
 http://matplotlib.org/
+
+
+start.sh: Start script that sources the ROOT env variables. Makes it easier to lauch via Desktop Menus. Adjust path to ROOT install.
+
+photoncam.desktop: Desktop launcher. Copy to $HOME/.local/share/applications and adjust paths inside.
