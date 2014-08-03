@@ -91,8 +91,8 @@ while(cap.isOpened()):
         curframe = 0
     elif( key == ord('p')):
         i = datetime.datetime.now()
-        filename = i.strftime('%Y-%m-%d-%H:%M:%S.png')
-        print( filename )
+        filename = i.strftime('Beamspot-%Y-%m-%d-%H:%M:%S.png')
+        print "Saving camera picture to ",filename
         cv2.imwrite( filename, frame )
 
 
