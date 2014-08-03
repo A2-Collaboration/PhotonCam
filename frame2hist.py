@@ -45,12 +45,13 @@ f1 = ROOT.TF1("f1","gaus",0 ,640);
 
 curframe = 0
 
-print("=====  OpenCV beam camera analyzer ======")
-print("")
-print("  r: remeasure")
-print("  s: save current picture")
-print("  q: quit")
-print("")
+def PrintKeys():
+        print("=====  OpenCV beam camera analyzer ======")
+        print("")
+        print("  r: remeasure")
+        print("  s: save current picture")
+        print("  q: quit")
+        print("")
 
 
 # Grab a grayscale video frame as 64bit floats
@@ -60,6 +61,10 @@ def GrabFrame():
     ret, frame = cap.read()
     # convert to grayscale and floats
     return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float)
+
+
+
+PrintKeys()
 
 while(cap.isOpened()):
 
@@ -143,6 +148,8 @@ while(cap.isOpened()):
         histy.Draw("")
         c.Update()
         print("Done")
+
+        PrintKeys()
 
 
 # Release everything if job is finished
