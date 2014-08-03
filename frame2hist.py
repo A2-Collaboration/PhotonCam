@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import ROOT
 import sys
+import datetime
 
 numframes = 10
 xbins = 64
@@ -46,35 +47,72 @@ print("")
 print("  r for remeasure")
 print("")
 
-while(cap.isOpened()):
+
+# Grab a grayscale video frame as 64bit floats
+def GrabFrame():
+    ret = False
+	#try to read a new frame
     ret, frame = cap.read()
+    # convert to grayscale and floats
+    return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float)
+
+while(cap.isOpened()):
+
+    ret, frame = GrabFrame()
+
     if curframe == 0:
         print("")
-        print("Filling histogram.")
+        print("Accumulating frames...")
         print("")
+        ret, buf=GrabFrame()
 
     if ret==True:
         if curframe < numframes:
             print(1.0 * curframe/numframes)
-            for x in range(640): 
-                for y in range(480):
-                    for color in frame[y][x]:
-                        hist.Fill(x,y,color)
-        else:
-            cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure",frame)
+            # accumulate frames
+            buf+=frame
 
-        if cv2.waitKey(1) & 0xFF == ord('r'):
-            curframe = 0
-            hist.Reset()
+        # show actual frame, converted to 8bit
+        cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure",frame.astype(np.uint8))
+    
 
         curframe = curframe + 1
     else:
+	print("Error reading video.")
         break
 
+    # Keyboad Input
+    key = cv2.waitKey(1) & 0xFF;
+    if(key == ord('q')):
+        print("Bye!")
+        break
+    elif( key == ord('r')):
+        hist.Reset()
+        curframe = 0
+    elif( key == ord('p')):
+        i = datetime.datetime.now()
+        filename = i.strftime('%Y-%m-%d-%H:%M:%S.png')
+        print( filename )
+        cv2.imwrite( filename, frame )
+
+
     if curframe == numframes:
+
+	print("Filling Histogram...")
+
+        size=buf.shape
+
+        # this is SLOOOOOW
+        for x in range(size[1]):
+            for y in range(size[0]):
+                 hist.Fill(x,y, frame[y][x])
+
+	print("Projecting...")
         histx = hist.ProjectionX()
         histy = hist.ProjectionY()
         print("")
+
+        print("Fitting...")
         c.cd(1)
         hist.Draw("colz")
         c.cd(2)
@@ -88,8 +126,10 @@ while(cap.isOpened()):
         histy.Fit("f1","Q")
         histy.Draw("")
         c.Update()
+        print("Done")
+
         print("")
-        print("  r for remeasure")
+        print("  r for remeasure, q to quit")
         print("")
 
 
