@@ -12,6 +12,7 @@ xbins = 64
 ybins = 48
 automode = True
 windowsize = (1200,800)
+average_factor = 0.1
 
 
 ### Parse Command Line ###
@@ -141,6 +142,11 @@ def Analyse():
            StartMeasurement()
 
 
+if( cap.isOpened()):
+    ret, sumbuf = GrabFrame()
+
+print "Size:", sumbuf.shape
+
 while(cap.isOpened()):
 
     ret, frame = GrabFrame()
@@ -148,9 +154,11 @@ while(cap.isOpened()):
     if curframe == 0:
         print ""
         print "Accumulating ",numframes," frames..."
-        ret, buf=GrabFrame()
+        buf=frame
 
     if ret==True:
+        sumbuf = cv2.addWeighted(sumbuf, 1-average_factor, frame, average_factor, 0)
+        
         if curframe < numframes:
             p = round(1.0 * curframe/numframes*10)
             if( p > last_p):
@@ -162,6 +170,7 @@ while(cap.isOpened()):
 
         # show actual frame, converted to 8bit
         cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure", frame.astype(np.uint8))
+        cv2.imshow("Averaged", sumbuf.astype(np.uint8))
 
         curframe = curframe + 1
     else:
