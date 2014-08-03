@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Icon=/home/a2cb/beamcontrols/PhotonCam/icon.svg
+Name=Photon Camera
+Comment=Photon Beam Monitoring	
+Categories=A2
+Exec=/home/a2cb/beamcontrols/PhotonCam/start.sh
+Path=/home/a2cb/Pictures
+StartupNotify=false
+Terminal=true
+Encoding=UTF-8
