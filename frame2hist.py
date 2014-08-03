@@ -6,7 +6,7 @@ import ROOT
 import sys
 import datetime
 
-numframes = 10
+numframes = 25
 xbins = 64
 ybins = 48
 
@@ -22,7 +22,7 @@ for arg in sys.argv:
 	print("")
 	print("  Usage:")
 	print("")
-	print("     frame2hist.py [--frames=< # frames to for fitting center = 10> ")
+	print("     frame2hist.py [--frames=< # frames to for fitting center = 25> ")
 	print("                    --xbins=<64> ")
 	print("                    --ybins=<48> ")
 	print("")
