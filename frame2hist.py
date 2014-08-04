@@ -128,10 +128,14 @@ def Analyse():
 
         print("Fitting...")
         c.cd(1)
+        hist.Fit("f2","Q")
         hist.Draw("colz")
         c.cd(2)
-        hist.Fit("f2","Q")
-        hist.Draw("")
+        hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
+        hist.Draw("ARR")
+	c.cd(1)
+	f2.Draw("same")
+	
         c.cd(3)
         histx.Fit("f1","Q")
 
@@ -175,8 +179,8 @@ while(cap.isOpened()):
             buf+=frame
 
         # show actual frame, converted to 8bit
-        cv2.imshow("BEAMCAMERA -- Hit 'r' for remeasure", frame.astype(np.uint8))
-        cv2.imshow("Averaged", sumbuf.astype(np.uint8))
+        cv2.imshow("BEAMCAMERA", frame.astype(np.uint8))
+        cv2.imshow("BEAMCAMERA - Averaged", sumbuf.astype(np.uint8))
 
         curframe = curframe + 1
     else:
