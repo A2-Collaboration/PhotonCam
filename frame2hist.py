@@ -3,7 +3,9 @@
 import numpy as np
 import cv2
 import ROOT
+from epics import *
 import sys
+import os
 import datetime
 
 ###### Default Settings #########
@@ -11,6 +13,7 @@ numframes = 25
 xbins = 64
 ybins = 48
 automode = True
+epicson = True
 windowsize = (1200,800)
 average_factor = 0.1
 
@@ -21,6 +24,7 @@ def PrintKeys():
         print("  r: remeasure")
         print("  s: save histograms as png")
         print("  p: save camera picture as png")
+        print("  e: generate an entry for Elog")
         print("  q: quit")
         print("")
 
@@ -65,6 +69,10 @@ hist = ROOT.TH2D("frame","Beam Profile",xbins,0,640,ybins,0,480)
 hist.SetXTitle("x")
 hist.SetYTitle("y")
 hist.SetZTitle("Intensity [a.u.]")
+histx = ROOT.TH1D()
+histx.SetTitle("X-Projection")
+histy = ROOT.TH1D()
+histy.SetTitle("Y-Projection")
 
 # Fit functions
 f2 = ROOT.TF2("f2","xygaus",0 ,640,0,640);
@@ -84,6 +92,39 @@ def GrabFrame():
 
 PrintKeys()
 
+def ToEpics():
+    caput("BEAM:PhotonCam:CenterX",hist.GetFunction("f2").GetParameter(1))
+    caput("BEAM:PhotonCam:CenterY",hist.GetFunction("f2").GetParameter(3))
+    caput("BEAM:PhotonCam:WidthX",hist.GetFunction("f2").GetParameter(2))
+    caput("BEAM:PhotonCam:WidthY",hist.GetFunction("f2").GetParameter(4))
+
+
+def GenerateElog():
+        filename1 = "BeamspotFit.png"
+        filename2 = "Beamspot.png"
+	os.system("rm " + filename1 + " " + filename2)
+        c.SetWindowSize(windowsize[0], windowsize[1])
+        c.SaveAs(filename1)
+        cv2.imwrite( filename2, frame )
+
+
+        date = datetime.datetime.now()
+	elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "' | "
+        elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
+        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2014-07_EPT_Prod' "
+        elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
+        elog_cmd = elog_cmd + "-a Subject='Photon beam profile' "
+        elog_cmd = elog_cmd + "-f " + filename1 + " ";
+        elog_cmd = elog_cmd + "-f " + filename2 + " ";
+
+
+        print("Uploading beamspot-images...")
+        if os.system(elog_cmd) == 0:
+                print("Elog entry generated, please edit and add your name!")
+        else:
+                print("Error generating Elog entry!")
+	
+	
 
 def SaveHistograms():
         date = datetime.datetime.now()
@@ -108,9 +149,9 @@ def Analyse():
         hist.Reset()
 
         date = datetime.datetime.now()
-        Title = date.strftime('Beam Profole %Y-%m-%d %H:%M:%S')
+        Title = date.strftime('Beam Profile %Y-%m-%d %H:%M:%S')
         hist.SetTitle(Title)
-	print("Filling Histogram...")
+	#print("Filling Histogram...")
 
         size=buf.shape
 
@@ -119,14 +160,10 @@ def Analyse():
             for y in range(size[0]):
                  hist.Fill(x,y, frame[y][x])
 
-	print("Projecting...")
         histx = hist.ProjectionX()
-	histx.SetTitle("X-Projection")
         histy = hist.ProjectionY()
-        histy.SetTitle("Y-Projection")
-        print("")
 
-        print("Fitting...")
+        #print("Fitting...")
         c.cd(1)
         hist.Fit("f2","Q")
         hist.Draw("colz")
@@ -144,12 +181,15 @@ def Analyse():
         histy.Fit("f1","Q")
         histy.Draw("")
         c.Update()
-        print("Done")
+        #print("Done")
 
         PrintKeys()
 
+        if(epicson):
+            ToEpics()
+
         if(automode):
-           StartMeasurement()
+            StartMeasurement()
 
 
 if( cap.isOpened()):
@@ -162,8 +202,9 @@ while(cap.isOpened()):
     ret, frame = GrabFrame()
 
     if curframe == 0:
-        print ""
-        print "Accumulating ",numframes," frames..."
+        #print ""
+        #print "Accumulating ",numframes," frames..."
+        sys.stdout.write("Accumulating " + str(numframes) + " frames...")
         buf=frame
 
     if ret==True:
@@ -202,6 +243,13 @@ while(cap.isOpened()):
 
     elif( key == ord('s')):
         SaveHistograms()
+
+    elif( key == ord('e')):
+        GenerateElog()
+
+    elif( key == ord('t')):
+        epicson ^= True;
+        print "Epics on: ", epicson
 
     elif( key == ord('a')):
         automode ^= True;
