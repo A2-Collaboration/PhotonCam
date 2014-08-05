@@ -24,7 +24,8 @@ def PrintKeys():
         print("  r: remeasure")
         print("  s: save histograms as png")
         print("  p: save camera picture as png")
-        print("  e: generate an entry for Elog")
+        print("  l: generate an entry for Elog")
+        print("  e: toggle EPICS logging")
         print("  q: quit")
         print("")
 
@@ -93,10 +94,10 @@ def GrabFrame():
 PrintKeys()
 
 def ToEpics():
-    caput("BEAM:PhotonCam:CenterX",hist.GetFunction("f2").GetParameter(1))
-    caput("BEAM:PhotonCam:CenterY",hist.GetFunction("f2").GetParameter(3))
-    caput("BEAM:PhotonCam:WidthX",hist.GetFunction("f2").GetParameter(2))
-    caput("BEAM:PhotonCam:WidthY",hist.GetFunction("f2").GetParameter(4))
+    caput("BEAM:PhotonCam:CenterX.A",hist.GetFunction("f2").GetParameter(1))
+    caput("BEAM:PhotonCam:CenterY.A",hist.GetFunction("f2").GetParameter(3))
+    caput("BEAM:PhotonCam:WidthX.A",hist.GetFunction("f2").GetParameter(2))
+    caput("BEAM:PhotonCam:WidthY.A",hist.GetFunction("f2").GetParameter(4))
 
 
 def GenerateElog():
@@ -158,7 +159,7 @@ def Analyse():
         # this is SLOOOOOW
         for x in range(size[1]):
             for y in range(size[0]):
-                 hist.Fill(x,y, frame[y][x])
+                 hist.Fill(x,y, frame[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
         histy = hist.ProjectionY()
@@ -166,10 +167,10 @@ def Analyse():
         #print("Fitting...")
         c.cd(1)
         hist.Fit("f2","Q")
-        hist.Draw("colz")
+        hist.Draw("ARR")
         c.cd(2)
         hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
-        hist.Draw("ARR")
+        hist.Draw("cont")
 	c.cd(1)
 	f2.Draw("same")
 	
@@ -244,10 +245,10 @@ while(cap.isOpened()):
     elif( key == ord('s')):
         SaveHistograms()
 
-    elif( key == ord('e')):
+    elif( key == ord('l')):
         GenerateElog()
 
-    elif( key == ord('t')):
+    elif( key == ord('e')):
         epicson ^= True;
         print "Epics on: ", epicson
 
