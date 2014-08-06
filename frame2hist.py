@@ -110,7 +110,10 @@ def GenerateElog():
 
 
         date = datetime.datetime.now()
-	elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "' | "
+        elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "\\n\\n"
+        elog_cmd = elog_cmd + "Center is at:  x = " + str(caget("BEAM:PhotonCam:CenterX")) + " , "
+        elog_cmd = elog_cmd + "               y = " + str(caget("BEAM:PhotonCam:CenterY")) + "\\n"
+        elog_cmd = elog_cmd + "Ratio: Ladder/p2 = " + str(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
         elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2014-07_EPT_Prod' "
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
