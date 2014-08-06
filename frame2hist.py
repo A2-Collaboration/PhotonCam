@@ -7,6 +7,7 @@ from epics import *
 import sys
 import os
 import datetime
+import thread
 
 ###### Default Settings #########
 numframes = 25
@@ -16,6 +17,12 @@ automode = True
 epicson = True
 windowsize = (1200,800)
 average_factor = 0.1
+videostandard = "0x00000400"
+v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
+if not os.path.isfile(v4l2settings):
+    print("Optimized v4l2-configuration doesn't exist yet!!")
+    print("    1.) Optimize using v4l2ucp.")
+    print("    2.) Store:         v4l2ctrl -s " + v4l2settings)
 
 def PrintKeys():
         print("Keys:")
@@ -39,6 +46,12 @@ for arg in sys.argv:
         ybins = int(arg.split('=')[1])
     if arg.startswith("--noauto"):
         automode=False
+    if arg.startswith("--v4l2-settings="):
+        v4l2settings = arg.split('=')[1];
+        if not os.path.isfile(v4l2settings):
+            print(" Error loading v4l2-config-file: " + v4l2settings + " doesn't exist!")
+            sys.exit(128)
+            
     if arg.startswith("--help" or "-help" ):
 	print "=====  OpenCV beam camera analyzer ======"
 	print ""
@@ -48,6 +61,7 @@ for arg in sys.argv:
 	print "                    --xbins=<64> "
 	print "                    --ybins=<48> "
 	print "                    --noauto  turn of auto mode"
+	print "                    --v4l2-settings=<user-settings-file>"
 	print ""
         PrintKeys()
 	print ""
@@ -55,7 +69,15 @@ for arg in sys.argv:
 
 ### Init ###
 
+# Init v4l2-driver:
+
+os.system("v4l2-ctl --set-standard=" + videostandard)
+
+if os.system("v4l2ctrl -l " + v4l2settings):
+    print("Error loading v4l2-config-file!")
+
 # Init Video Capture
+
 cap = cv2.VideoCapture(0)
 
 # Set up ROOT
@@ -82,6 +104,7 @@ f1 = ROOT.TF1("f1","gaus",0 ,640);
 curframe = 0
 last_p = 0
 
+ch2file = open("chi2s.dat","w")
 
 
 # Grab a grayscale video frame as 64bit floats
@@ -105,7 +128,9 @@ def GenerateElog():
         filename2 = "Beamspot.png"
 	os.system("rm " + filename1 + " " + filename2)
         c.SetWindowSize(windowsize[0], windowsize[1])
-        c.SaveAs(filename1)
+        c.Update()
+        #c.SaveAs(filename1)
+        c.Print(filename1)
         cv2.imwrite( filename2, frame )
 
 
@@ -119,7 +144,7 @@ def GenerateElog():
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
         elog_cmd = elog_cmd + "-a Subject='Photon beam profile' "
         elog_cmd = elog_cmd + "-f " + filename1 + " ";
-        elog_cmd = elog_cmd + "-f " + filename2 + " ";
+        elog_cmd = elog_cmd + "-f " + filename2;
 
 
         print("Uploading beamspot-images...")
@@ -162,7 +187,7 @@ def Analyse():
         # this is SLOOOOOW
         for x in range(size[1]):
             for y in range(size[0]):
-                 hist.Fill(x,y, frame[size[0] - y - 1][x])
+                 hist.Fill(x,y, sumbuf[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
         histy = hist.ProjectionY()
@@ -170,6 +195,7 @@ def Analyse():
         #print("Fitting...")
         c.cd(1)
         hist.Fit("f2","Q")
+        ch2file.write(str(f2.GetChisquare()) + "    " )
         hist.Draw("ARR")
         c.cd(2)
         hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
@@ -179,10 +205,12 @@ def Analyse():
 	
         c.cd(3)
         histx.Fit("f1","Q")
+        ch2file.write(str(f1.GetChisquare()) + "    " )
 
         histx.Draw("")
         c.cd(4)
         histy.Fit("f1","Q")
+        ch2file.write(str(f1.GetChisquare()) + "    " + str(f2.GetParameter(1)) + "    " + str(f2.GetParameter(3)) + "\n" )
         histy.Draw("")
         c.Update()
         #print("Done")
@@ -270,3 +298,4 @@ while(cap.isOpened()):
 # Release everything if job is finished
 cap.release()
 cv2.destroyAllWindows()
+ch2file.close()
