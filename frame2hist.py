@@ -3,11 +3,11 @@
 import numpy as np
 import cv2
 import ROOT
-from epics import *
+from epics import caput, caget
 import sys
 import os
 import datetime
-import thread
+#import thread
 
 ###### Default Settings #########
 numframes = 25
@@ -17,6 +17,7 @@ automode = True
 epicson = True
 windowsize = (1200,800)
 average_factor = 0.1
+dumpdata = False;
 videostandard = "0x00000400"
 v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
 if not os.path.isfile(v4l2settings):
@@ -51,6 +52,8 @@ for arg in sys.argv:
         if not os.path.isfile(v4l2settings):
             print(" Error loading v4l2-config-file: " + v4l2settings + " doesn't exist!")
             sys.exit(128)
+    if arg.startswith("--dump-data"):
+        dumpdata = True;
             
     if arg.startswith("--help" or "-help" ):
 	print "=====  OpenCV beam camera analyzer ======"
@@ -104,7 +107,8 @@ f1 = ROOT.TF1("f1","gaus",0 ,640);
 curframe = 0
 last_p = 0
 
-ch2file = open("chi2s.dat","w")
+if dumpdata:
+    datafile = open("beam.dat","w")
 
 
 # Grab a grayscale video frame as 64bit floats
@@ -116,12 +120,26 @@ def GrabFrame():
 
 PrintKeys()
 
-def ToEpics():
-    caput("BEAM:PhotonCam:CenterX.A",hist.GetFunction("f2").GetParameter(1))
-    caput("BEAM:PhotonCam:CenterY.A",hist.GetFunction("f2").GetParameter(3))
-    caput("BEAM:PhotonCam:WidthX.A",hist.GetFunction("f2").GetParameter(2))
-    caput("BEAM:PhotonCam:WidthY.A",hist.GetFunction("f2").GetParameter(4))
+def CheckBeam():
+    #listhistx = [ histx.GetBinContent(i+1) for i in range(histx.GetNbinsX()) ]
+    hsum = hist.GetSum()
+    return hsum > 100000 , hsum
 
+def ToEpics():
+    beam, hsum = CheckBeam()
+    if beam:
+        caput("BEAM:PhotonCam:CenterX.A",hist.GetFunction("f2").GetParameter(1))
+        caput("BEAM:PhotonCam:CenterY.A",hist.GetFunction("f2").GetParameter(3))
+        caput("BEAM:PhotonCam:WidthX.A",hist.GetFunction("f2").GetParameter(2))
+        caput("BEAM:PhotonCam:WidthY.A",hist.GetFunction("f2").GetParameter(4))
+        caput("BEAM:PhotonCam:Sum.A",hsum)
+    else:
+        caput("BEAM:PhotonCam:CenterX.A",float('nan'))
+        caput("BEAM:PhotonCam:CenterY.A",float('nan'))
+        caput("BEAM:PhotonCam:WidthX.A",float('nan'))
+        caput("BEAM:PhotonCam:WidthY.A",float('nan'))
+        caput("BEAM:PhotonCam:Sum.A",hsum)
+        
 
 def GenerateElog():
         filename1 = "BeamspotFit.png"
@@ -131,7 +149,7 @@ def GenerateElog():
         c.Update()
         #c.SaveAs(filename1)
         c.Print(filename1)
-        cv2.imwrite( filename2, frame )
+        cv2.imwrite( filename2, sumbuf )
 
 
         date = datetime.datetime.now()
@@ -175,19 +193,20 @@ def StartMeasurement():
     last_p = 0
 
 def Analyse():
+        global buf
         hist.Reset()
 
         date = datetime.datetime.now()
         Title = date.strftime('Beam Profile %Y-%m-%d %H:%M:%S')
         hist.SetTitle(Title)
 	#print("Filling Histogram...")
-
+        buf /= numframes
         size=buf.shape
 
         # this is SLOOOOOW
         for x in range(size[1]):
             for y in range(size[0]):
-                 hist.Fill(x,y, sumbuf[size[0] - y - 1][x])
+                 hist.Fill(x,y, buf[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
         histy = hist.ProjectionY()
@@ -195,7 +214,8 @@ def Analyse():
         #print("Fitting...")
         c.cd(1)
         hist.Fit("f2","Q")
-        ch2file.write(str(f2.GetChisquare()) + "    " )
+        if dumpdata:
+            datafile.write(str(f2.GetChisquare()) + "    " )
         hist.Draw("ARR")
         c.cd(2)
         hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
@@ -205,12 +225,17 @@ def Analyse():
 	
         c.cd(3)
         histx.Fit("f1","Q")
-        ch2file.write(str(f1.GetChisquare()) + "    " )
+        if dumpdata:
+            datafile.write(str(f1.GetChisquare()) + "    " )
 
         histx.Draw("")
         c.cd(4)
         histy.Fit("f1","Q")
-        ch2file.write(str(f1.GetChisquare()) + "    " + str(f2.GetParameter(1)) + "    " + str(f2.GetParameter(3)) + "\n" )
+        if dumpdata:
+            datafile.write(str(f1.GetChisquare()) + "    ")
+            datafile.write(str(f2.GetParameter(1)) + "    " + str(f2.GetParameter(3)) + "    ")
+            datafile.write(str(caget("TAGG:EPT:LadderP2Ratio")))
+            datafile.write("\n" )
         histy.Draw("")
         c.Update()
         #print("Done")
@@ -226,6 +251,7 @@ def Analyse():
 
 if( cap.isOpened()):
     ret, sumbuf = GrabFrame()
+    buf = sumbuf
 
 print "Size:", sumbuf.shape
 
@@ -298,4 +324,5 @@ while(cap.isOpened()):
 # Release everything if job is finished
 cap.release()
 cv2.destroyAllWindows()
-ch2file.close()
+if dumpdata:
+    datafile.close()
