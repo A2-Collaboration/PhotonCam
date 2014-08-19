@@ -170,7 +170,9 @@ def GenerateElog():
                 print("Elog entry generated, please edit and add your name!")
         else:
                 print("Error generating Elog entry!")
-	
+
+        os.remove(filename1)
+        os.remove(filename2)
 	
 
 def SaveHistograms():
