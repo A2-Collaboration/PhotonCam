@@ -142,15 +142,8 @@ def ToEpics():
         
 
 def GenerateElog():
-        filename1 = "BeamspotFit.png"
-        filename2 = "Beamspot.png"
-	os.system("rm " + filename1 + " " + filename2)
-        c.SetWindowSize(windowsize[0], windowsize[1])
-        c.Update()
-        #c.SaveAs(filename1)
-        c.Print(filename1)
-        cv2.imwrite( filename2, sumbuf )
-
+        filename1 = SaveHistograms()
+        filename2 = SaveCamera()
 
         date = datetime.datetime.now()
         elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "\\n\\n"
@@ -177,16 +170,19 @@ def GenerateElog():
 
 def SaveHistograms():
         date = datetime.datetime.now()
-        filename = date.strftime('BeamspotFit-%Y-%m-%d-%H:%M:%S.png')
+        filename = date.strftime('BeamspotFit-%Y-%m-%d_%H-%M-%S.png')
         print "Saving Histograms to ",filename
         c.SetWindowSize(windowsize[0], windowsize[1])
+        c.Update()
         c.SaveAs(filename)
+        return filename
 
 def SaveCamera():
         date = datetime.datetime.now()
-        filename = date.strftime('Beamspot-%Y-%m-%d-%H:%M:%S.png')
+        filename = date.strftime('Beamspot-%Y-%m-%d_%H-%M-%S.png')
         print "Saving Camera Picture to ",filename
-        cv2.imwrite( filename, frame )
+        cv2.imwrite( filename, sumbuf )
+        return filename
 
 def StartMeasurement():
     global last_p
