@@ -218,24 +218,29 @@ def Analyse():
 
         #print("Fitting...")
         c.cd(1)
-        hist.Fit("f2","Q")
+        if fits:
+            hist.Fit("f2","Q")
         if dumpdata:
             datafile.write(str(f2.GetChisquare()) + "    " )
         hist.Draw("ARR")
         c.cd(2)
-        hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
+        if fits:
+            hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
         hist.Draw("cont")
 	c.cd(1)
-	f2.Draw("same")
+        if fits:
+            f2.Draw("same")
 	
         c.cd(3)
-        histx.Fit("f1","Q")
+        if fits:
+            histx.Fit("f1","Q")
         if dumpdata:
             datafile.write(str(f1.GetChisquare()) + "    " )
 
         histx.Draw("")
         c.cd(4)
-        histy.Fit("f1","Q")
+        if fits:
+            histy.Fit("f1","Q")
         if dumpdata:
             datafile.write(str(f1.GetChisquare()) + "    ")
             datafile.write(str(f2.GetParameter(1)) + "    " + str(f2.GetParameter(3)) + "    ")
@@ -324,8 +329,7 @@ while(cap.isOpened()):
         print "Fits: ", fits
 
 
-    if (curframe == numframes and fits == True):
-        print ""
+    if (curframe == numframes):
         Analyse()
 
 
