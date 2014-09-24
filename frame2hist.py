@@ -16,8 +16,9 @@ ybins = 48
 automode = True
 epicson = True
 windowsize = (1200,800)
-average_factor = 0.1
-dumpdata = False;
+average_factor = 0.01
+dumpdata = False
+fits=True
 videostandard = "0x00000400"
 v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
 if not os.path.isfile(v4l2settings):
@@ -26,15 +27,20 @@ if not os.path.isfile(v4l2settings):
     print("    2.) Store:         v4l2ctrl -s " + v4l2settings)
 
 def PrintKeys():
-        print("Keys:")
+        print("======= Beam Camera =====================")
         print("")
-        print("  a: Toggle auto mode")
-        print("  r: remeasure")
-        print("  s: save histograms as png")
-        print("  p: save camera picture as png")
-        print("  l: generate an entry for Elog")
-        print("  e: toggle EPICS logging")
-        print("  q: quit")
+        print("Keys (in camera windows):")
+        print("")
+        print("  Options:")
+        print("    a: toggle auto mode      < " + str(automode) + " >")
+        print("    e: toggle EPICS logging  < " + str(epicson)  + " >")
+        print("    f: toggle fitting        < " + str(fits)     + " >")
+        print("  Actions:")
+        print("    r: remeasure")
+        print("    s: save histograms as png")
+        print("    p: save camera picture as png")
+        print("    l: generate an entry for Elog")
+        print("    q: quit")
         print("")
 
 ### Parse Command Line ###
@@ -118,7 +124,8 @@ def GrabFrame():
     return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float)
 
 
-PrintKeys()
+def Clear():
+    sys.stderr.write("\x1b[2J\x1b[H")
 
 def CheckBeam():
     #listhistx = [ histx.GetBinContent(i+1) for i in range(histx.GetNbinsX()) ]
@@ -238,7 +245,7 @@ def Analyse():
         c.Update()
         #print("Done")
 
-        PrintKeys()
+        #PrintKeys()
 
         if(epicson):
             ToEpics()
@@ -258,8 +265,8 @@ while(cap.isOpened()):
     ret, frame = GrabFrame()
 
     if curframe == 0:
-        #print ""
-        #print "Accumulating ",numframes," frames..."
+        Clear()
+        PrintKeys()
         sys.stdout.write("Accumulating " + str(numframes) + " frames...")
         buf=frame
 
@@ -312,9 +319,12 @@ while(cap.isOpened()):
         print "Automode: ", automode
         if(automode):
            StartMeasurement()
+    elif( key == ord('f')):
+	fits ^= True;
+        print "Fits: ", fits
 
 
-    if curframe == numframes:
+    if (curframe == numframes and fits == True):
         print ""
         Analyse()
 
