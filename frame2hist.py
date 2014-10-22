@@ -130,7 +130,8 @@ def Clear():
 def CheckBeam():
     #listhistx = [ histx.GetBinContent(i+1) for i in range(histx.GetNbinsX()) ]
     hsum = hist.GetSum()
-    return hsum > 100000 , hsum
+    hasbeam = caget("BEAM:IonChamber") > 500
+    return hasbeam, hsum
 
 def ToEpics():
     beam, hsum = CheckBeam()
