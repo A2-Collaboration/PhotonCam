@@ -119,6 +119,10 @@ last_p = 0
 if dumpdata:
     datafile = open("beam.dat","w")
 
+def CheckBeam():
+    #listhistx = [ histx.GetBinContent(i+1) for i in range(histx.GetNbinsX()) ]
+    hasbeam = caget("BEAM:IonChamber") > 500
+    return hasbeam
 
 # ======= init curses ============
 
@@ -150,12 +154,14 @@ def putLoading(p):
 def putState(analysed):
     statescreen.erase()
     statescreen.addstr( 2,4,"screen size:  (" + str(sumbuf.shape[1]) + ", " + str(sumbuf.shape[0])+")")
+    statescreen.addstr( 4,4,   "Has beam:     " + str(CheckBeam()))
     formstr = "{:>.2f}"
     if analysed:
-        statescreen.addstr( 4,4,"x-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(1)))
-        statescreen.addstr( 5,4,"y-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(3)))
-        statescreen.addstr( 7,4,"x-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(2)))
-        statescreen.addstr( 8,4,"y-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(4)))
+        statescreen.addstr( 6,4,"x-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(1)))
+        statescreen.addstr( 7,4,"y-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(3)))
+        statescreen.addstr( 8,4,"x-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(2)))
+        statescreen.addstr( 9,4,"y-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(4)))
+
 
 
 
@@ -192,14 +198,10 @@ def GrabFrame():
 def Clear():
     sys.stderr.write("\x1b[2J\x1b[H")
 
-def CheckBeam():
-    #listhistx = [ histx.GetBinContent(i+1) for i in range(histx.GetNbinsX()) ]
-    hsum = hist.GetSum()
-    hasbeam = caget("BEAM:IonChamber") > 500
-    return hasbeam, hsum
 
 def ToEpics():
-    beam, hsum = CheckBeam()
+    hsum = hist.GetSum()
+    beam = CheckBeam()
     if beam:
         caput("BEAM:PhotonCam:CenterX.A",hist.GetFunction("f2").GetParameter(1))
         caput("BEAM:PhotonCam:CenterY.A",hist.GetFunction("f2").GetParameter(3))
