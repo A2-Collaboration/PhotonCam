@@ -7,6 +7,7 @@ from epics import caput, caget
 import sys
 import os
 import datetime
+import curses
 #import thread
 
 ###### Default Settings #########
@@ -25,6 +26,8 @@ if not os.path.isfile(v4l2settings):
     print("Optimized v4l2-configuration doesn't exist yet!!")
     print("    1.) Optimize using v4l2ucp.")
     print("    2.) Store:         v4l2ctrl -s " + v4l2settings)
+
+
 
 def PrintKeys():
         print("======= Beam Camera =====================")
@@ -116,6 +119,68 @@ last_p = 0
 if dumpdata:
     datafile = open("beam.dat","w")
 
+
+# ======= init curses ============
+
+
+def refreshWin(window,windowTitle=""):
+        window.box()
+        if not windowTitle=="":
+            window.addstr(0,2,"< " + windowTitle + " >")
+        window.refresh()
+    
+
+mscreen = curses.initscr()
+refreshWin(mscreen,"Photon Camera Programm")
+mmaxy, mmaxx = mscreen.getmaxyx()
+loadscreen = curses.newwin(3, mmaxx - 16 ,2, 8)
+keyscreen = curses.newwin(14, 40 ,6,4)
+statescreen = curses.newwin(14, mmaxx - 42 - 8 ,6,42 + 4 )
+mscreen.keypad(1)
+curses.noecho()
+curses.cbreak()
+curses.curs_set(0)
+
+def putLoading(p):
+    loadscreen.erase()
+    pstring = "Accumulating " +str(numframes) + " frames... "
+    pstring = pstring + int(p) * 2 * "#"
+    loadscreen.addstr(1,2,pstring)
+
+def putState(analysed):
+    statescreen.erase()
+    statescreen.addstr( 2,4,"screen size:  (" + str(sumbuf.shape[1]) + ", " + str(sumbuf.shape[0])+")")
+    formstr = "{:>.2f}"
+    if analysed:
+        statescreen.addstr( 4,4,"x-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(1)))
+        statescreen.addstr( 5,4,"y-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(3)))
+        statescreen.addstr( 7,4,"x-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(2)))
+        statescreen.addstr( 8,4,"y-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(4)))
+
+
+
+
+def putKeys():
+    keyscreen.erase()
+    keyscreen.addstr( 2,4,"Options:")
+    keyscreen.addstr( 3,9,"a: auto mode      < " + str(automode) + " >")
+    keyscreen.addstr( 4,9,"e: EPICS logging  < " + str(epicson)  + " >")
+    keyscreen.addstr( 5,9,"f: fitting        < " + str(fits)     + " >")
+    keyscreen.addstr( 6,4,"Actions:")
+    keyscreen.addstr( 7,9,"r: remeasure")
+    keyscreen.addstr( 8,9,"s: save histograms as png")
+    keyscreen.addstr( 9,9,"p: save camera picture as png")
+    keyscreen.addstr(10,9,"l: generate an entry for Elog")
+    keyscreen.addstr(11,9,"q: quit")
+
+def undoCurses():
+    mscreen.keypad(0)
+    curses.nocbreak()
+    curses.echo()
+    curses.curs_set(1)
+    curses.endwin()
+
+    
 
 # Grab a grayscale video frame as 64bit floats
 def GrabFrame():
@@ -250,8 +315,7 @@ def Analyse():
         histy.Draw("")
         c.Update()
         #print("Done")
-
-        #PrintKeys()
+        
 
         if(epicson):
             ToEpics()
@@ -266,14 +330,19 @@ if( cap.isOpened()):
 
 print "Size:", sumbuf.shape
 
+analysed = False
+
 while(cap.isOpened()):
 
     ret, frame = GrabFrame()
 
     if curframe == 0:
-        Clear()
-        PrintKeys()
-        sys.stdout.write("Accumulating " + str(numframes) + " frames...")
+        mscreen.clear()
+        refreshWin(mscreen,"Photon Camera Programm")
+
+        refreshWin(statescreen,"Status")
+        putState(analysed)
+
         buf=frame
 
     if ret==True:
@@ -282,8 +351,10 @@ while(cap.isOpened()):
         if curframe < numframes:
             p = round(1.0 * curframe/numframes*10)
             if( p > last_p):
-                sys.stdout.write('#')
-                sys.stdout.flush()
+                putKeys()
+                refreshWin(keyscreen, "Hotkeys (in CV2-frames)")
+                putLoading(p)
+                refreshWin(loadscreen)
                 last_p = p
             # accumulate frames
             buf+=frame
@@ -298,40 +369,38 @@ while(cap.isOpened()):
         break
 
     # Keyboad Input
-    key = cv2.waitKey(1) & 0xFF;
+    cvkey = cv2.waitKey(1) & 0xFF;
+    #nckey = mscreen.getkey()          #blocks programm, fix this?
 
-    if(key == ord('q')):
-        print("Bye!")
+    if(cvkey == ord('q')):
         break
 
-    elif( key == ord('r')):
+    elif( cvkey == ord('r')):
         StartMeasurement()
 
-    elif( key == ord('p')):
+    elif( cvkey == ord('p')):
         SaveCamera()
 
-    elif( key == ord('s')):
+    elif( cvkey == ord('s')):
         SaveHistograms()
 
-    elif( key == ord('l')):
+    elif( cvkey == ord('l')):
         GenerateElog()
 
-    elif( key == ord('e')):
+    elif( cvkey == ord('e')):
         epicson ^= True;
-        print "Epics on: ", epicson
 
-    elif( key == ord('a')):
+    elif( cvkey == ord('a')):
         automode ^= True;
-        print "Automode: ", automode
         if(automode):
            StartMeasurement()
-    elif( key == ord('f')):
+    elif( cvkey == ord('f')):
 	fits ^= True;
-        print "Fits: ", fits
 
 
     if (curframe == numframes):
         Analyse()
+        analysed = True
 
 
 # Release everything if job is finished
@@ -339,3 +408,4 @@ cap.release()
 cv2.destroyAllWindows()
 if dumpdata:
     datafile.close()
+undoCurses()
