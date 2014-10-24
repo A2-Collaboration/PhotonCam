@@ -8,7 +8,7 @@ import sys
 import os
 import datetime
 import curses
-#import thread
+import subprocess
 
 ###### Default Settings #########
 numframes = 25
@@ -163,9 +163,6 @@ def putState(analysed):
         statescreen.addstr( 9,4,"y-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(4)))
 
 
-
-
-
 def putKeys():
     keyscreen.erase()
     keyscreen.addstr( 2,4,"Options:")
@@ -217,14 +214,21 @@ def ToEpics():
         
 
 def GenerateElog():
+        statescreen.addstr( 2,2, "Generate Elog-entry: ")
+
+        statescreen.addstr( 3,4, "Saving histograms...")
         filename1 = SaveHistograms()
+        statescreen.addstr( 4,4, "Saving beamspot images...")
         filename2 = SaveCamera()
+
+        statescreen.erase()
+
 
         date = datetime.datetime.now()
         elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "\\n\\n"
-        elog_cmd = elog_cmd + "Center is at:  x = " + str(caget("BEAM:PhotonCam:CenterX")) + " , "
-        elog_cmd = elog_cmd + "               y = " + str(caget("BEAM:PhotonCam:CenterY")) + "\\n"
-        elog_cmd = elog_cmd + "Ratio: Ladder/p2 = " + str(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
+        elog_cmd = elog_cmd + "  Center is at:     (x,y) = ( {:>.2f} , {:>.2f} )\\n".format(caget("BEAM:PhotonCam:CenterX"),
+                                                                                          caget("BEAM:PhotonCam:CenterY") )
+        elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
         elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2014-10_EPT_Prod' "
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
@@ -233,11 +237,12 @@ def GenerateElog():
         elog_cmd = elog_cmd + "-f " + filename2;
 
 
-        print("Uploading beamspot-images...")
         if os.system(elog_cmd) == 0:
-                print("Elog entry generated, please edit and add your name!")
+            statescreen.addstr( 6,6, "Elog, entry ready,")
+            statescreen.addstr( 7,6, "please add names!")
         else:
-                print("Error generating Elog entry!")
+            statescreen.addstr( 6,6, "Error:")
+            statescreen.addstr( 7,6, "Posting elog entry failed!")
 
         os.remove(filename1)
         os.remove(filename2)
@@ -246,7 +251,7 @@ def GenerateElog():
 def SaveHistograms():
         date = datetime.datetime.now()
         filename = date.strftime('BeamspotFit-%Y-%m-%d_%H-%M-%S.png')
-        print "Saving Histograms to ",filename
+        #print "Saving Histograms to ",filename
         c.SetWindowSize(windowsize[0], windowsize[1])
         c.Update()
         c.SaveAs(filename)
@@ -255,7 +260,7 @@ def SaveHistograms():
 def SaveCamera():
         date = datetime.datetime.now()
         filename = date.strftime('Beamspot-%Y-%m-%d_%H-%M-%S.png')
-        print "Saving Camera Picture to ",filename
+        #print "Saving Camera Picture to ",filename
         cv2.imwrite( filename, sumbuf )
         return filename
 
@@ -330,7 +335,6 @@ if( cap.isOpened()):
     ret, sumbuf = GrabFrame()
     buf = sumbuf
 
-print "Size:", sumbuf.shape
 
 analysed = False
 
@@ -367,7 +371,7 @@ while(cap.isOpened()):
 
         curframe = curframe + 1
     else:
-	print("Error reading video.")
+	#print("Error reading video.")
         break
 
     # Keyboad Input
