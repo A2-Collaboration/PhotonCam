@@ -8,7 +8,6 @@ import sys
 import os
 import datetime
 import curses
-import subprocess
 
 ###### Default Settings #########
 numframes = 25
@@ -214,15 +213,10 @@ def ToEpics():
         
 
 def GenerateElog():
-        statescreen.addstr( 2,2, "Generate Elog-entry: ")
-
-        statescreen.addstr( 3,4, "Saving histograms...")
         filename1 = SaveHistograms()
-        statescreen.addstr( 4,4, "Saving beamspot images...")
         filename2 = SaveCamera()
 
         statescreen.erase()
-
 
         date = datetime.datetime.now()
         elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "\\n\\n"
@@ -236,6 +230,12 @@ def GenerateElog():
         elog_cmd = elog_cmd + "-f " + filename1 + " ";
         elog_cmd = elog_cmd + "-f " + filename2;
 
+
+        statescreen.addstr( 2,2, "Generate Elog-entry: ")
+
+        statescreen.addstr( 3,4, "Saving histograms...")
+        statescreen.addstr( 4,4, "Saving beamspot images...")
+        
 
         if os.system(elog_cmd) == 0:
             statescreen.addstr( 6,6, "Elog, entry ready,")
