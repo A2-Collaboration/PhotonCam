@@ -41,15 +41,24 @@ EpicsRecords = dict( [ ( record , PV(record) ) for record in
                           "BEAM:PhotonCam:Sum.A"      ] 
                      ] )
 
+def check_records():
+    return [ pv.pvname for pv in EpicsRecords.itervalues() if not pv.connected ]
+
 print
 print "=====  Initializing all PVs  ========================="
 print
+print("  +-"+4*len(EpicsRecords)*"-"+"-+")
+sys.stdout.write("    ")
+sys.stdout.flush()
 for pv in EpicsRecords.itervalues():
     pv.connect()
+    sys.stdout.write(4*"#")
+    sys.stdout.flush()
+sys.stdout.write("  ")
+sys.stdout.flush()
 print
-
-def check_records():
-    return [ pv.pvname for pv in EpicsRecords.itervalues() if not pv.connected ]
+print("  +-"+4*len(EpicsRecords)*"-"+"-+")
+print
 
 if check_records():
     print "Warning, Following PVs are not connected:"
@@ -57,22 +66,21 @@ if check_records():
     print
     print "  --> Check your EpicsRecords-dict"
     print
-    raw_input("Smash head on keyboard to continue!")
+    raw_input("Smash head on keyboard, then hit return to continue!")
 
         
 
 def caget(record):
     if EpicsRecords[record].connected:
         return EpicsRecords[record].get()
-    else:
-        print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
-        return False
+    #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
+    return False
 
 def caput(record,value):
     if EpicsRecords[record].connected:
         EpicsRecords[record].put()
-    else:
-        print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
+    #else:
+        #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
                 
 
 
