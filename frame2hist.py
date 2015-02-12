@@ -224,7 +224,7 @@ def GenerateElog():
                                                                                           caget("BEAM:PhotonCam:CenterY") )
         elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
-        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2014-12_EPT_Prod' "
+        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='test beam Jan 2015' "
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
         elog_cmd = elog_cmd + "-a Subject='Photon beam profile' "
         elog_cmd = elog_cmd + "-f " + filename1 + " ";
