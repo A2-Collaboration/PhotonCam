@@ -3,11 +3,12 @@
 import numpy as np
 import cv2
 import ROOT
-from epics import caput, caget
+from epics import PV
 import sys
 import os
 import datetime
 import curses
+from time import sleep
 
 ###### Default Settings #########
 numframes = 25
@@ -26,6 +27,53 @@ if not os.path.isfile(v4l2settings):
     print("    1.) Optimize using v4l2ucp.")
     print("    2.) Store:         v4l2ctrl -s " + v4l2settings)
 
+###### Initialize EPICS-Records #########
+
+EpicsRecords = dict( [ ( record , PV(record) ) for record in 
+                        [ "BEAM:IonChamber",
+                          "TAGG:EPT:LadderP2Ratio",
+                          "BEAM:PhotonCam:CenterX",
+                          "BEAM:PhotonCam:CenterX.A",
+                          "BEAM:PhotonCam:CenterY",
+                          "BEAM:PhotonCam:CenterY.A",
+                          "BEAM:PhotonCam:WidthX.A",
+                          "BEAM:PhotonCam:WidthY.A",
+                          "BEAM:PhotonCam:Sum.A"      ] 
+                     ] )
+
+print
+print "=====  Initializing all PVs  ========================="
+print
+for pv in EpicsRecords.itervalues():
+    pv.connect()
+print
+
+def check_records():
+    return [ pv.pvname for pv in EpicsRecords.itervalues() if not pv.connected ]
+
+if check_records():
+    print "Warning, Following PVs are not connected:"
+    print check_records()
+    print
+    print "  --> Check your EpicsRecords-dict"
+    print
+    raw_input("Smash head on keyboard to continue!")
+
+        
+
+def caget(record):
+    if EpicsRecords[record].connected:
+        return EpicsRecords[record].get()
+    else:
+        print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
+        return False
+
+def caput(record,value):
+    if EpicsRecords[record].connected:
+        EpicsRecords[record].put()
+    else:
+        print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
+                
 
 
 def PrintKeys():
@@ -160,6 +208,9 @@ def putState(analysed):
         statescreen.addstr( 7,4,"y-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(3)))
         statescreen.addstr( 8,4,"x-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(2)))
         statescreen.addstr( 9,4,"y-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(4)))
+    if check_records():
+        statescreen.addstr(11,4,"Warning:")
+        statescreen.addstr(12,4,"{0} disconnected PVs!".format(len(check_records())))
 
 
 def putKeys():
