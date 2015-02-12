@@ -27,60 +27,6 @@ if not os.path.isfile(v4l2settings):
     print("    1.) Optimize using v4l2ucp.")
     print("    2.) Store:         v4l2ctrl -s " + v4l2settings)
 
-###### Initialize EPICS-Records #########
-
-EpicsRecords = dict( [ ( record , PV(record) ) for record in 
-                        [ "BEAM:IonChamber",
-                          "TAGG:EPT:LadderP2Ratio",
-                          "BEAM:PhotonCam:CenterX",
-                          "BEAM:PhotonCam:CenterX.A",
-                          "BEAM:PhotonCam:CenterY",
-                          "BEAM:PhotonCam:CenterY.A",
-                          "BEAM:PhotonCam:WidthX.A",
-                          "BEAM:PhotonCam:WidthY.A",
-                          "BEAM:PhotonCam:Sum.A"      ] 
-                     ] )
-
-def check_records():
-    return [ pv.pvname for pv in EpicsRecords.itervalues() if not pv.connected ]
-
-print
-print "=====  Initializing all PVs  ========================="
-print
-print("  +-"+4*len(EpicsRecords)*"-"+"-+")
-sys.stdout.write("    ")
-sys.stdout.flush()
-for pv in EpicsRecords.itervalues():
-    pv.connect()
-    sys.stdout.write(4*"#")
-    sys.stdout.flush()
-sys.stdout.write("  ")
-sys.stdout.flush()
-print
-print("  +-"+4*len(EpicsRecords)*"-"+"-+")
-print
-
-if check_records():
-    print "Warning, Following PVs are not connected:"
-    print check_records()
-    print
-    print "  --> Check your EpicsRecords-dict"
-    print
-    raw_input("Smash head on keyboard, then hit return to continue!")
-
-        
-
-def caget(record):
-    if EpicsRecords[record].connected:
-        return EpicsRecords[record].get()
-    #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
-    return False
-
-def caput(record,value):
-    if EpicsRecords[record].connected:
-        EpicsRecords[record].put()
-    #else:
-        #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
                 
 
 
@@ -138,6 +84,9 @@ for arg in sys.argv:
 
 # Init v4l2-driver:
 
+print
+print "=====  Initializing v4l2 - driver  ==================="
+print
 os.system("v4l2-ctl --set-standard=" + videostandard)
 
 if os.system("v4l2ctrl -l " + v4l2settings):
@@ -147,9 +96,67 @@ if os.system("v4l2ctrl -l " + v4l2settings):
 
 cap = cv2.VideoCapture(0)
 
+###### Initialize EPICS-Records #########
+print
+print "=====  Initializing all PVs  ========================="
+print
+
+EpicsRecords = dict( [ ( record , PV(record) ) for record in 
+                        [ "BEAM:IonChamber",
+                          "TAGG:EPT:LadderP2Ratio",
+                          "BEAM:PhotonCam:CenterX",
+                          "BEAM:PhotonCam:CenterX.A",
+                          "BEAM:PhotonCam:CenterY",
+                          "BEAM:PhotonCam:CenterY.A",
+                          "BEAM:PhotonCam:WidthX.A",
+                          "BEAM:PhotonCam:WidthY.A",
+                          "BEAM:PhotonCam:Sum.A"      ] 
+                     ] )
+
+def check_records():
+    return [ pv.pvname for pv in EpicsRecords.itervalues() if not pv.connected ]
+
+print("  +-"+4*len(EpicsRecords)*"-"+"-+")
+sys.stdout.write("    ")
+sys.stdout.flush()
+for pv in EpicsRecords.itervalues():
+    pv.connect()
+    sys.stdout.write(4*"#")
+    sys.stdout.flush()
+sys.stdout.write("  ")
+sys.stdout.flush()
+print
+print("  +-"+4*len(EpicsRecords)*"-"+"-+")
+print
+
+if check_records():
+    print "Warning, Following PVs are not connected:"
+    print check_records()
+    print
+    print "  --> Check your EpicsRecords-dict"
+    print
+    raw_input("Smash head on keyboard, then hit return to continue!")
+
+        
+
+def caget(record):
+    if EpicsRecords[record].connected:
+        return EpicsRecords[record].get()
+    #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
+    return False
+
+def caput(record,value):
+    if EpicsRecords[record].connected:
+        EpicsRecords[record].put()
+    #else:
+        #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
 # Set up ROOT
 
 # Canvas
+print
+print "=====  Initializing ROOT canvas  ====================="
+print
+
 c = ROOT.TCanvas("profile","Beam Profile")
 c.Divide(2,2)
 c.SetWindowSize(windowsize[0], windowsize[1])
