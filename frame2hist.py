@@ -134,6 +134,7 @@ if check_records():
     print check_records()
     print
     print "  --> Check your EpicsRecords-dict"
+    print "      for full EPICS support!     "
     print
     raw_input("Smash head on keyboard, then hit return to continue!")
 
@@ -147,7 +148,7 @@ def caget(record):
 
 def caput(record,value):
     if EpicsRecords[record].connected:
-        EpicsRecords[record].put()
+        EpicsRecords[record].put(value)
     #else:
         #print("  Warning: PV {0} not connected. Check your EpicsRecords!".format(EpicsRecords[record].pvname) )
 # Set up ROOT
