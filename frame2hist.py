@@ -219,7 +219,7 @@ def putState(analysed):
     statescreen.addstr( 2,4,"screen size:  (" + str(sumbuf.shape[1]) + ", " + str(sumbuf.shape[0])+")")
     statescreen.addstr( 4,4,   "Has beam:     " + str(CheckBeam()))
     formstr = "{:>.2f}"
-    if analysed:
+    if analysed and fits:
         statescreen.addstr( 6,4,"x-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(1)))
         statescreen.addstr( 7,4,"y-center:     " + formstr.format(hist.GetFunction("f2").GetParameter(3)))
         statescreen.addstr( 8,4,"x-width:      " + formstr.format(hist.GetFunction("f2").GetParameter(2)))
@@ -291,7 +291,7 @@ def GenerateElog():
                                                                                           caget("BEAM:PhotonCam:CenterY") )
         elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
-        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='test beam Jan 2015' "
+        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2015-06 Compton' "
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
         elog_cmd = elog_cmd + "-a Subject='Photon beam profile' "
         elog_cmd = elog_cmd + "-f " + filename1 + " ";
@@ -354,7 +354,9 @@ def Analyse():
                  hist.Fill(x,y, buf[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
+        histx.SetTitle(date.strftime('Beam X-Projection %Y-%m-%d %H:%M:%S'))
         histy = hist.ProjectionY()
+        histy.SetTitle(date.strftime('Beam Y-Projection %Y-%m-%d %H:%M:%S'))
 
         #print("Fitting...")
         c.cd(1)
@@ -468,7 +470,8 @@ while(cap.isOpened()):
         if(automode):
            StartMeasurement()
     elif( cvkey == ord('f')):
-	fits ^= True;
+	fits ^= True
+        epicson = fits
 
 
     if (curframe == numframes):
