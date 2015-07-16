@@ -265,7 +265,7 @@ def Clear():
 def ToEpics():
     hsum = hist.GetSum()
     beam = CheckBeam()
-    if beam:
+    if beam and fits:
         caput("BEAM:PhotonCam:CenterX.A",hist.GetFunction("f2").GetParameter(1))
         caput("BEAM:PhotonCam:CenterY.A",hist.GetFunction("f2").GetParameter(3))
         caput("BEAM:PhotonCam:WidthX.A",hist.GetFunction("f2").GetParameter(2))
