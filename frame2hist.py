@@ -22,6 +22,10 @@ dumpdata = False
 fits=True
 videostandard = "0x00000400"
 v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
+
+logbookName    = "Main Logbook 2015" 
+experimentName = "2015-06 Compton"
+
 if not os.path.isfile(v4l2settings):
     print("Optimized v4l2-configuration doesn't exist yet!!")
     print("    1.) Optimize using v4l2ucp.")
@@ -103,7 +107,7 @@ print
 
 EpicsRecords = dict( [ ( record , PV(record) ) for record in 
                         [ "BEAM:IonChamber",
-                          "TAGG:EPT:LadderP2Ratio",
+                          "TAGG:TAGG:LadderP2Ratio",
                           "BEAM:PhotonCam:CenterX",
                           "BEAM:PhotonCam:CenterX.A",
                           "BEAM:PhotonCam:CenterY",
@@ -291,7 +295,8 @@ def GenerateElog():
                                                                                           caget("BEAM:PhotonCam:CenterY") )
         elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
-        elog_cmd = elog_cmd + "-l 'Main Group Logbook' -a Experiment='2015-06 Compton' "
+        elog_cmd = elog_cmd + "-l '" + logbookName +"' "
+        elog_cmd = elog_cmd + "-a Experiment='"+ experimentName +"' "
         elog_cmd = elog_cmd + "-a Author='PLEASE FILL IN' -a Type=Routine "
         elog_cmd = elog_cmd + "-a Subject='Photon beam profile' "
         elog_cmd = elog_cmd + "-f " + filename1 + " ";
@@ -471,7 +476,7 @@ while(cap.isOpened()):
            StartMeasurement()
     elif( cvkey == ord('f')):
 	fits ^= True
-        epicson = fits
+        #epicson = fits
 
 
     if (curframe == numframes):
