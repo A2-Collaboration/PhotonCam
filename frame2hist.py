@@ -11,9 +11,12 @@ import curses
 from time import sleep
 
 ###### Default Settings #########
+class settings:
+    xbins = 640
+    ybins = 480
+    bin2mm = 0.13
+    
 numframes = 25
-xbins = 64
-ybins = 48
 automode = True
 epicson = True
 windowsize = (1200,800)
@@ -56,9 +59,9 @@ for arg in sys.argv:
     if arg.startswith("--numframes="):
         numframes = int(arg.split('=')[1])
     if arg.startswith("--xbins="):
-        xbins = int(arg.split('=')[1])
+        settings.xbins = int(arg.split('=')[1])
     if arg.startswith("--ybins="):
-        ybins = int(arg.split('=')[1])
+        settings.ybins = int(arg.split('=')[1])
     if arg.startswith("--noauto"):
         automode=False
     if arg.startswith("--v4l2-settings="):
@@ -167,7 +170,7 @@ c.Divide(2,2)
 c.SetWindowSize(windowsize[0], windowsize[1])
 
 # 2D profile histogram
-hist = ROOT.TH2D("frame","Beam Profile",xbins,0,640,ybins,0,480)
+hist = ROOT.TH2D("frame","Beam Profile",settings.xbins,0,settings.bin2mm*settings.xbins,settings.ybins,0,settings.bin2mm*settings.ybins)
 hist.SetXTitle("x")
 hist.SetYTitle("y")
 hist.SetZTitle("Intensity [a.u.]")
@@ -177,8 +180,8 @@ histy = ROOT.TH1D()
 histy.SetTitle("Y-Projection")
 
 # Fit functions
-f2 = ROOT.TF2("f2","xygaus",0 ,640,0,640);
-f1 = ROOT.TF1("f1","gaus",0 ,640);
+f2 = ROOT.TF2("f2","xygaus",0 ,settings.bin2mm*settings.xbins,0,settings.bin2mm*settings.xbins);
+f1 = ROOT.TF1("f1","gaus",0 ,settings.bin2mm*settings.xbins);
 
 curframe = 0
 last_p = 0
@@ -356,7 +359,7 @@ def Analyse():
         # this is SLOOOOOW
         for x in range(size[1]):
             for y in range(size[0]):
-                 hist.Fill(x,y, buf[size[0] - y - 1][x])
+                 hist.Fill(settings.bin2mm*x,settings.bin2mm*y, buf[size[0] - settings.bin2mm*y - 1][settings.bin2mm*x])
 
         histx = hist.ProjectionX()
         histx.SetTitle(date.strftime('Beam X-Projection %Y-%m-%d %H:%M:%S'))
@@ -373,7 +376,7 @@ def Analyse():
         c.cd(2)
         if fits:
             hist.GetFunction("f2").SetBit(ROOT.TF2.kNotDraw);
-        hist.Draw("cont")
+        hist.Draw("col")
 	c.cd(1)
         if fits:
             f2.Draw("same")
