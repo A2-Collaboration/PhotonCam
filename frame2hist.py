@@ -12,9 +12,13 @@ from time import sleep
 
 ###### Default Settings #########
 class settings:
-    xbins = 640
-    ybins = 480
-    bin2mm = 0.13
+    xpixels = 640
+    ypixels = 480
+    mm2pix = 0.13
+    pix2bin = 10
+    mm2bin = 1.3
+    xbins = 64
+    ybins = 48
     
 numframes = 25
 automode = True
@@ -26,8 +30,8 @@ fits=True
 videostandard = "0x00000400"
 v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
 
-logbookName    = "Main Logbook 2015" 
-experimentName = "2015-06 Compton"
+logbookName    = "Main Logbook 2016" 
+experimentName = "2016_10_Eta_4He"
 
 if not os.path.isfile(v4l2settings):
     print("Optimized v4l2-configuration doesn't exist yet!!")
@@ -58,10 +62,14 @@ def PrintKeys():
 for arg in sys.argv:
     if arg.startswith("--numframes="):
         numframes = int(arg.split('=')[1])
-    if arg.startswith("--xbins="):
-        settings.xbins = int(arg.split('=')[1])
-    if arg.startswith("--ybins="):
-        settings.ybins = int(arg.split('=')[1])
+    if arg.startswith("--mm2pix="):
+        settings.mm2pix = arg.split('=')[1];
+        settings.mm2bin = (settings.mm2pix * settings.pix2bin)
+    if arg.startswith("--pix2bin="):
+        settings.pix2bin = int(arg.split('=')[1])
+        settings.mm2bin = (settings.mm2pix * settings.pix2bin)
+        settings.xbins = int(settings.xpixels/settings.pix2bin)
+        settings.ybins = int(settings.ypixels/settings.pix2bin)
     if arg.startswith("--noauto"):
         automode=False
     if arg.startswith("--v4l2-settings="):
@@ -78,8 +86,8 @@ for arg in sys.argv:
 	print "  Usage:"
 	print ""
 	print "     ",sys.argv[0]," [--numframes=< # frames to for fitting center = 25> "
-	print "                    --xbins=<64> "
-	print "                    --ybins=<48> "
+	print "                    --mm2pix=<0.13> "
+	print "                    --pix2bin=<10> "
 	print "                    --noauto  turn of auto mode"
 	print "                    --v4l2-settings=<user-settings-file>"
 	print ""
@@ -170,7 +178,7 @@ c.Divide(2,2)
 c.SetWindowSize(windowsize[0], windowsize[1])
 
 # 2D profile histogram
-hist = ROOT.TH2D("frame","Beam Profile",settings.xbins,0,settings.bin2mm*settings.xbins,settings.ybins,0,settings.bin2mm*settings.ybins)
+hist = ROOT.TH2D("frame","Beam Profile",settings.xbins,0,settings.mm2bin*settings.xbins,settings.ybins,0,settings.mm2bin*settings.ybins)
 hist.SetXTitle("x")
 hist.SetYTitle("y")
 hist.SetZTitle("Intensity [a.u.]")
@@ -180,8 +188,8 @@ histy = ROOT.TH1D()
 histy.SetTitle("Y-Projection")
 
 # Fit functions
-f2 = ROOT.TF2("f2","xygaus",0 ,settings.bin2mm*settings.xbins,0,settings.bin2mm*settings.xbins);
-f1 = ROOT.TF1("f1","gaus",0 ,settings.bin2mm*settings.xbins);
+f2 = ROOT.TF2("f2","xygaus",0 ,settings.mm2bin*settings.xbins,0,settings.mm2bin*settings.ybins);
+f1 = ROOT.TF1("f1","gaus",0 ,settings.mm2bin*settings.xbins);
 
 curframe = 0
 last_p = 0
@@ -359,7 +367,7 @@ def Analyse():
         # this is SLOOOOOW
         for x in range(size[1]):
             for y in range(size[0]):
-                 hist.Fill(settings.bin2mm*x,settings.bin2mm*y, buf[size[0] - settings.bin2mm*y - 1][settings.bin2mm*x])
+                 hist.Fill(settings.mm2pix*x,settings.mm2pix*y, buf[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
         histx.SetTitle(date.strftime('Beam X-Projection %Y-%m-%d %H:%M:%S'))
