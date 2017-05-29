@@ -63,13 +63,9 @@ for arg in sys.argv:
     if arg.startswith("--numframes="):
         numframes = int(arg.split('=')[1])
     if arg.startswith("--mm2pix="):
-        settings.mm2pix = arg.split('=')[1];
-        settings.mm2bin = (settings.mm2pix * settings.pix2bin)
+        settings.mm2pix = float(arg.split('=')[1])
     if arg.startswith("--pix2bin="):
         settings.pix2bin = int(arg.split('=')[1])
-        settings.mm2bin = (settings.mm2pix * settings.pix2bin)
-        settings.xbins = int(settings.xpixels/settings.pix2bin)
-        settings.ybins = int(settings.ypixels/settings.pix2bin)
     if arg.startswith("--noauto"):
         automode=False
     if arg.startswith("--v4l2-settings="):
@@ -96,6 +92,10 @@ for arg in sys.argv:
 
 
 ### Init ###
+
+settings.mm2bin = float(settings.mm2pix * settings.pix2bin)
+settings.xbins = int(settings.xpixels/settings.pix2bin)
+settings.ybins = int(settings.ypixels/settings.pix2bin)
 
 # Init v4l2-driver:
 
@@ -366,8 +366,10 @@ def Analyse():
 
         # this is SLOOOOOW
         for x in range(size[1]):
+            xpos = float(settings.mm2pix*x)
             for y in range(size[0]):
-                 hist.Fill(settings.mm2pix*x,settings.mm2pix*y, buf[size[0] - y - 1][x])
+                ypos = float(settings.mm2pix*y)
+                hist.Fill(xpos,ypos, buf[size[0] - y - 1][x])
 
         histx = hist.ProjectionX()
         histx.SetTitle(date.strftime('Beam X-Projection %Y-%m-%d %H:%M:%S'))
