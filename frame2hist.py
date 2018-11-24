@@ -29,6 +29,7 @@ dumpdata = False
 fits=True
 videostandard = "0x00000400"
 v4l2settings = os.environ['HOME'] + "/.v4l2-default-optimized"
+epics_ladderp2 = "TAGG:TAGG:LadderP2Ratio"  # which tagger is used? TAGG:TAGG or TAGG:EPT
 
 logbookName    = "Main Logbook 2016" 
 experimentName = "2016_10_Eta_4He"
@@ -118,7 +119,7 @@ print
 
 EpicsRecords = dict( [ ( record , PV(record) ) for record in 
                         [ "BEAM:IonChamber",
-                          "TAGG:TAGG:LadderP2Ratio",
+                          epics_ladderp2,
                           "BEAM:PhotonCam:CenterX",
                           "BEAM:PhotonCam:CenterX.A",
                           "BEAM:PhotonCam:CenterY",
@@ -304,7 +305,7 @@ def GenerateElog():
         elog_cmd = "echo 'Beamspot Pictures from " + date.strftime("%Y-%m-%d-%H:%M:%S") + "\\n\\n"
         elog_cmd = elog_cmd + "  Center is at:     (x,y) = ( {:>.2f} , {:>.2f} )\\n".format(caget("BEAM:PhotonCam:CenterX"),
                                                                                           caget("BEAM:PhotonCam:CenterY") )
-        elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget("TAGG:EPT:LadderP2Ratio")) + "' | "
+        elog_cmd = elog_cmd + "  Ratio:         Ladder/p2 = {:>.2f}".format(caget(epics_ladderp2)) + "' | "
         elog_cmd = elog_cmd + "/opt/elog/bin/elog -h elog.office.a2.kph -u a2online a2messung "
         elog_cmd = elog_cmd + "-l '" + logbookName +"' "
         elog_cmd = elog_cmd + "-a Experiment='"+ experimentName +"' "
@@ -404,7 +405,7 @@ def Analyse():
         if dumpdata:
             datafile.write(str(f1.GetChisquare()) + "    ")
             datafile.write(str(f2.GetParameter(1)) + "    " + str(f2.GetParameter(3)) + "    ")
-            datafile.write(str(caget("TAGG:EPT:LadderP2Ratio")))
+            datafile.write(str(caget(epics_ladderp2)))
             datafile.write("\n" )
         histy.Draw("")
         c.Update()
